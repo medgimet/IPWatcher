@@ -1,14 +1,14 @@
 # IPWatcher
 
-Утилита в строке меню macOS для слежения за публичным IP-адресом.
+macOS menu bar app that monitors your public IP address.
 
-## Что делает
+## What it does
 
-- Показывает текущий IP прямо в трее
-- Уведомляет, если IP изменился
-- Работает без Dock-иконки в фоне
+- Shows current IP in the menu bar
+- Sends a notification when IP changes
+- Runs silently in the background with no Dock icon
 
-## Установка
+## Install
 
 ```bash
 git clone https://github.com/medgimet/IPWatcher.git
@@ -17,4 +17,4 @@ swift build -c release
 .build/release/IPWatcher &
 ```
 
-При первом запуске откроется окно настроек — введи целевой IP и интервал проверки.
+On first launch a settings window will appear — enter your target IP and check interval.
