@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settings: Settings?
     private var timer: Timer?
     private var lastKnownIP: String?
+    private var lastFlag: String = "🌐"
     private var settingsWindowController: SettingsWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -24,11 +25,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         setTitle("🌐 …")
 
+
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Настройки…", action: #selector(openSettings), keyEquivalent: ","))
-        menu.addItem(NSMenuItem(title: "Проверить сейчас", action: #selector(checkNow), keyEquivalent: "r"))
+        menu.addItem(NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ","))
+        menu.addItem(NSMenuItem(title: "Check now", action: #selector(checkNow), keyEquivalent: "r"))
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Завершить", action: #selector(quit), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
         statusItem.menu = menu
     }
 
@@ -52,28 +54,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task { [weak self] in
             guard let self else { return }
             do {
-                let ip = try await IPFetcher.fetchCurrentIP()
-                await MainActor.run { self.handleIP(ip) }
+                let info = try await IPFetcher.fetchCurrentIP()
+                await MainActor.run { self.handleIP(info) }
             } catch {
-                self.setTitle("⚠️ ошибка")
+                self.setTitle("⚠️ error")
             }
         }
     }
 
-    private func handleIP(_ ip: String) {
+    private func handleIP(_ info: IPInfo) {
         guard let target = settings?.targetIP else { return }
+        let ip = info.ip
+        let flag = flagEmoji(for: info.countryCode)
         let changed = (lastKnownIP != nil && lastKnownIP != ip)
         let mismatch = (ip != target)
 
         if changed || (lastKnownIP == nil && mismatch) {
             Notifier.send(
-                title: "IP изменился!",
-                body: "Было: \(lastKnownIP ?? target)  →  Стало: \(ip)"
+                title: "IP changed!",
+                body: "\(lastFlag) \(lastKnownIP ?? target)  →  \(flag) \(ip)"
             )
         }
 
         lastKnownIP = ip
-        setTitle(mismatch ? "⚠️ \(ip)" : "🌐 \(ip)")
+        lastFlag = flag
+        setTitle(mismatch ? "⚠️ \(ip)" : "\(flag) \(ip)")
     }
 
     // MARK: - Actions
