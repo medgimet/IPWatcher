@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var lastKnownIP: String?
     private var lastFlag: String = "🌐"
     private var settingsWindowController: SettingsWindowController?
+    private var historyMenu = NSMenu()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
@@ -25,13 +26,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         setTitle("🌐 …")
 
-
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ","))
         menu.addItem(NSMenuItem(title: "Check now", action: #selector(checkNow), keyEquivalent: "r"))
+
+        let historyItem = NSMenuItem(title: "History", action: nil, keyEquivalent: "")
+        historyItem.submenu = historyMenu
+        menu.addItem(historyItem)
+
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
         statusItem.menu = menu
+
+        refreshHistoryMenu()
+    }
+
+    private func refreshHistoryMenu() {
+        historyMenu.removeAllItems()
+        let entries = History.load()
+        if entries.isEmpty {
+            let empty = NSMenuItem(title: "No changes recorded yet", action: nil, keyEquivalent: "")
+            empty.isEnabled = false
+            historyMenu.addItem(empty)
+            return
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd MMM yyyy, HH:mm"
+        for entry in entries {
+            let title = "\(entry.oldIP)  →  \(entry.newIP)   \(formatter.string(from: entry.date))"
+            let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            historyMenu.addItem(item)
+        }
     }
 
     private func setTitle(_ s: String) {
@@ -66,13 +92,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let target = settings?.targetIP else { return }
         let ip = info.ip
         let flag = flagEmoji(for: info.countryCode)
-        let changed = (lastKnownIP != nil && lastKnownIP != ip)
-        let mismatch = (ip != target)
+        let changed = lastKnownIP != nil && lastKnownIP != ip
+        let mismatch = ip != target
 
-        if changed || (lastKnownIP == nil && mismatch) {
+        if changed, let old = lastKnownIP {
+            let entry = HistoryEntry(oldIP: old, newIP: ip, date: Date())
+            History.append(entry)
+            refreshHistoryMenu()
             Notifier.send(
                 title: "IP changed!",
-                body: "\(lastFlag) \(lastKnownIP ?? target)  →  \(flag) \(ip)"
+                body: "\(lastFlag) \(old)  →  \(flag) \(ip)"
             )
         }
 
