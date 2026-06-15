@@ -1,5 +1,7 @@
 # IPWatcher
 
+![IPWatcher screenshot](screenshot.png)
+
 macOS menu bar app that monitors your public IP address.
 
 ## What it does
