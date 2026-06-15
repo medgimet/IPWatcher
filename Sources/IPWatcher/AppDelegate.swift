@@ -24,7 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        setTitle("🌐 …")
+        setStatus(flag: "🌐", ip: "…", mismatch: false)
 
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ","))
@@ -60,8 +60,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func setStatus(flag: String, ip: String, mismatch: Bool) {
+        DispatchQueue.main.async {
+            let btn = self.statusItem.button
+            btn?.image = makeFlagImage(flag: flag, mismatch: mismatch)
+            btn?.imagePosition = .imageLeft
+            btn?.title = " \(ip)"
+        }
+    }
+
     private func setTitle(_ s: String) {
         DispatchQueue.main.async {
+            self.statusItem.button?.image = nil
             self.statusItem.button?.title = s
         }
     }
@@ -107,7 +117,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         lastKnownIP = ip
         lastFlag = flag
-        setTitle(mismatch ? "⚠️ \(ip)" : "\(flag) \(ip)")
+        setStatus(flag: flag, ip: ip, mismatch: mismatch)
     }
 
     // MARK: - Actions
