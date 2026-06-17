@@ -3,6 +3,7 @@ import Foundation
 struct Settings: Codable {
     var targetIP: String
     var intervalSeconds: Int
+    var hideIP: Bool = false
 
     static let defaultInterval = 60
 

@@ -61,11 +61,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setStatus(flag: String, ip: String, mismatch: Bool) {
+        let hide = settings?.hideIP ?? false
         DispatchQueue.main.async {
             let btn = self.statusItem.button
             btn?.image = makeFlagImage(flag: flag, mismatch: mismatch)
-            btn?.imagePosition = .imageLeft
-            btn?.title = " \(ip)"
+            btn?.imagePosition = hide ? .imageOnly : .imageLeft
+            btn?.title = hide ? "" : " \(ip)"
         }
     }
 

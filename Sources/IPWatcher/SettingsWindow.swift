@@ -3,18 +3,19 @@ import AppKit
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private var ipField = NSTextField()
     private var intervalField = NSTextField()
+    private var hideIPCheckbox = NSButton(checkboxWithTitle: "Hide IP in menu bar", target: nil, action: nil)
     private var onSave: (Settings) -> Void
 
     init(current: Settings?, onSave: @escaping (Settings) -> Void) {
         self.onSave = onSave
 
         let w = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 160),
+            contentRect: NSRect(x: 0, y: 0, width: 320, height: 190),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
-        w.title = "IPWatcher — Настройки"
+        w.title = "IPWatcher — Settings"
         w.center()
         super.init(window: w)
         w.delegate = self
@@ -33,20 +34,22 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             return f
         }
 
-        ipField.placeholderString = "например, 1.2.3.4"
+        ipField.placeholderString = "e.g. 1.2.3.4"
         ipField.stringValue = current?.targetIP ?? ""
 
         intervalField.placeholderString = "60"
         intervalField.stringValue = current.map { String($0.intervalSeconds) } ?? "60"
 
-        let ipLabel = label("Целевой IP:")
-        let intervalLabel = label("Интервал (сек):")
+        hideIPCheckbox.state = (current?.hideIP == true) ? .on : .off
 
-        let saveBtn = NSButton(title: "Сохранить", target: self, action: #selector(save))
+        let ipLabel = label("Target IP:")
+        let intervalLabel = label("Interval (sec):")
+
+        let saveBtn = NSButton(title: "Save", target: self, action: #selector(save))
         saveBtn.bezelStyle = .rounded
         saveBtn.keyEquivalent = "\r"
 
-        for sub in [ipLabel, ipField, intervalLabel, intervalField, saveBtn] as [NSView] {
+        for sub in [ipLabel, ipField, intervalLabel, intervalField, hideIPCheckbox, saveBtn] as [NSView] {
             sub.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview(sub)
         }
@@ -68,6 +71,9 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             intervalField.widthAnchor.constraint(equalToConstant: 80),
             intervalField.centerYAnchor.constraint(equalTo: intervalLabel.centerYAnchor),
 
+            hideIPCheckbox.leadingAnchor.constraint(equalTo: ipField.leadingAnchor),
+            hideIPCheckbox.topAnchor.constraint(equalTo: intervalLabel.bottomAnchor, constant: 16),
+
             saveBtn.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             saveBtn.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -16),
         ])
@@ -77,19 +83,19 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let ip = ipField.stringValue.trimmingCharacters(in: .whitespaces)
         let interval = Int(intervalField.stringValue) ?? Settings.defaultInterval
         guard !ip.isEmpty else {
-            showAlert("Введите целевой IP-адрес")
+            let a = NSAlert()
+            a.messageText = "Enter target IP address"
+            a.runModal()
             return
         }
-        let s = Settings(targetIP: ip, intervalSeconds: max(10, interval))
+        let s = Settings(
+            targetIP: ip,
+            intervalSeconds: max(10, interval),
+            hideIP: hideIPCheckbox.state == .on
+        )
         s.save()
         onSave(s)
         window?.close()
-    }
-
-    private func showAlert(_ msg: String) {
-        let a = NSAlert()
-        a.messageText = msg
-        a.runModal()
     }
 
     func windowWillClose(_ notification: Notification) {
