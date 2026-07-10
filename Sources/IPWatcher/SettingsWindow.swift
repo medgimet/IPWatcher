@@ -21,6 +21,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             defer: false
         )
         w.center()
+        w.isReleasedWhenClosed = false
         super.init(window: w)
         w.delegate = self
         buildUI(current: current)
@@ -150,6 +151,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         )
         s.save()
         onSave(s)
+        window?.orderOut(nil)
         window?.close()
     }
 

@@ -128,6 +128,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Actions
 
     @objc func openSettings() {
+        // Reuse existing window if already open — avoids stacked duplicates
+        if let existing = settingsWindowController, existing.window?.isVisible == true {
+            existing.show()
+            return
+        }
         settingsWindowController = SettingsWindowController(current: settings) { [weak self] newSettings in
             self?.settings = newSettings
             self?.setupStatusItem()
