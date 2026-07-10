@@ -4,6 +4,7 @@ struct Settings: Codable {
     var targetIP: String
     var intervalSeconds: Int
     var hideIP: Bool = false
+    var language: AppLanguage = .en
 
     static let defaultInterval = 60
 

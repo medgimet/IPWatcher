@@ -10,9 +10,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var historyMenu = NSMenu()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        settings = Settings.load()
+        L10n.current = settings?.language ?? .en
+
         setupStatusItem()
 
-        settings = Settings.load()
         if settings == nil {
             openSettings()
         } else {
@@ -23,19 +25,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Status Item
 
     private func setupStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        setStatus(flag: "🌐", ip: "…", mismatch: false)
+        if statusItem == nil {
+            statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        }
+        setStatus(flag: lastFlag, ip: lastKnownIP ?? "…", mismatch: false)
 
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ","))
-        menu.addItem(NSMenuItem(title: "Check now", action: #selector(checkNow), keyEquivalent: "r"))
+        menu.addItem(NSMenuItem(title: L10n.t(.menuSettings), action: #selector(openSettings), keyEquivalent: ","))
+        menu.addItem(NSMenuItem(title: L10n.t(.menuCheckNow), action: #selector(checkNow), keyEquivalent: "r"))
 
-        let historyItem = NSMenuItem(title: "History", action: nil, keyEquivalent: "")
+        let historyItem = NSMenuItem(title: L10n.t(.menuHistory), action: nil, keyEquivalent: "")
         historyItem.submenu = historyMenu
         menu.addItem(historyItem)
 
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: L10n.t(.menuQuit), action: #selector(quit), keyEquivalent: "q"))
         statusItem.menu = menu
 
         refreshHistoryMenu()
@@ -45,7 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         historyMenu.removeAllItems()
         let entries = History.load()
         if entries.isEmpty {
-            let empty = NSMenuItem(title: "No changes recorded yet", action: nil, keyEquivalent: "")
+            let empty = NSMenuItem(title: L10n.t(.noHistory), action: nil, keyEquivalent: "")
             empty.isEnabled = false
             historyMenu.addItem(empty)
             return
@@ -94,7 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let info = try await IPFetcher.fetchCurrentIP()
                 await MainActor.run { self.handleIP(info) }
             } catch {
-                self.setTitle("⚠️ error")
+                self.setTitle("⚠️ \(L10n.t(.error))")
             }
         }
     }
@@ -111,7 +115,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             History.append(entry)
             refreshHistoryMenu()
             Notifier.send(
-                title: "IP changed!",
+                title: L10n.t(.ipChangedTitle),
                 body: "\(lastFlag) \(old)  →  \(flag) \(ip)"
             )
         }
@@ -126,6 +130,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func openSettings() {
         settingsWindowController = SettingsWindowController(current: settings) { [weak self] newSettings in
             self?.settings = newSettings
+            self?.setupStatusItem()
             self?.startMonitoring()
         }
         settingsWindowController?.show()
